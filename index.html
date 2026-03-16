@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            background-image: 
+                linear-gradient(to right, rgba(200, 200, 200, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(200, 200, 200, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #e2e8f0;
+            border-radius: 999px;
+            height: 8px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            background: currentColor;
+            border-radius: 50%;
+            margin-top: -6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        #projectile-info {
+            transition: all 0.3s ease;
+        }
+    </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full flex flex-col overflow-hidden bg-slate-50" id="app-body"><!-- Header -->
+  <header class="p-4 shadow-sm z-10 flex justify-between items-center" id="main-header">
+   <div>
+    <h1 id="lab-title" class="text-2xl font-bold">Lab Maya Lintasan Parabola</h1>
+    <p id="lab-instructions" class="text-sm opacity-70">Atur parameter dan amati pergerakan benda.</p>
+   </div>
+   <div class="flex gap-4 items-center"><button id="view-data-btn" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-colors"> <i data-lucide="table"></i> Riwayat Data </button>
+   </div>
+  </header><!-- Main Content -->
+  <main class="flex-1 flex overflow-hidden p-4 gap-4"><!-- Control Panel -->
+   <aside class="w-80 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-6"><!-- Angle Control -->
+     <div class="space-y-3">
+      <div class="flex justify-between items-center"><label for="angle-input" class="font-semibold text-slate-700">Sudut Tembak (°)</label> <span id="angle-val" class="px-2 py-1 bg-slate-100 rounded text-sm font-bold">45</span>
+      </div><input type="range" id="angle-input" min="0" max="90" value="45" class="w-full text-indigo-600">
+     </div><!-- Velocity Control -->
+     <div class="space-y-3">
+      <div class="flex justify-between items-center"><label for="velocity-input" class="font-semibold text-slate-700">Kecepatan (m/s)</label> <span id="velocity-val" class="px-2 py-1 bg-slate-100 rounded text-sm font-bold">20</span>
+      </div><input type="range" id="velocity-input" min="1" max="50" value="20" class="w-full text-indigo-600">
+     </div><!-- Gravity Control -->
+     <div class="space-y-3">
+      <div class="flex justify-between items-center"><label for="gravity-input" class="font-semibold text-slate-700">Gravitasi (m/s²)</label> <span id="gravity-val" class="px-2 py-1 bg-slate-100 rounded text-sm font-bold">9.8</span>
+      </div><input type="range" id="gravity-input" min="1" max="20" step="0.1" value="9.8" class="w-full text-indigo-600">
+     </div><!-- Height Control -->
+     <div class="space-y-3">
+      <div class="flex justify-between items-center"><label for="height-input" class="font-semibold text-slate-700">Ketinggian Awal (m)</label> <span id="height-val" class="px-2 py-1 bg-slate-100 rounded text-sm font-bold">0</span>
+      </div><input type="range" id="height-input" min="0" max="20" value="0" class="w-full text-indigo-600">
+     </div><!-- Action Buttons -->
+     <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100"><button id="fire-btn" class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white transition-all transform active:scale-95 shadow-lg shadow-indigo-200"> <i data-lucide="play"></i> TEMBAK </button> <button id="reset-btn" class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-all active:scale-95"> <i data-lucide="refresh-cw"></i> RESET </button>
+     </div>
+    </div><!-- Stats Real-time -->
+    <div id="projectile-info" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4 opacity-50">
+     <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Data Hasil</h3>
+     <div class="grid grid-cols-1 gap-3 text-sm">
+      <div class="flex justify-between p-2 rounded bg-slate-50"><span class="text-slate-500">Tinggi Maksimal:</span> <span id="res-hmax" class="font-bold">0.00 m</span>
+      </div>
+      <div class="flex justify-between p-2 rounded bg-slate-50"><span class="text-slate-500">Jarak Terjauh:</span> <span id="res-range" class="font-bold">0.00 m</span>
+      </div>
+      <div class="flex justify-between p-2 rounded bg-slate-50"><span class="text-slate-500">Waktu Total:</span> <span id="res-time" class="font-bold">0.00 s</span>
+      </div>
+     </div><button id="save-data-btn" disabled class="w-full py-2 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 font-semibold hover:border-indigo-400 hover:text-indigo-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"> Simpan ke Riwayat </button>
+    </div>
+   </aside><!-- Simulation Area -->
+   <section class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden canvas-container">
+    <canvas id="sim-canvas" class="w-full h-full"></canvas><!-- Scale Overlay -->
+    <div class="absolute bottom-4 left-4 flex flex-col gap-1 text-[10px] text-slate-400 pointer-events-none">
+     <div class="flex items-center gap-2">
+      <div class="w-10 h-[1px] bg-slate-300"></div><span>Skala: 1 kotak = 1 meter</span>
+     </div>
+    </div>
+   </section>
+  </main><!-- Data Modal (Hidden by Default) -->
+  <div id="data-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-8">
+   <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-full">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+     <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="database" class="text-indigo-600"></i> Riwayat Percobaan</h2><button id="close-modal-btn" class="p-2 rounded-full hover:bg-slate-100 transition-colors"> <i data-lucide="x"></i> </button>
+    </div>
+    <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+     <table class="w-full text-left">
+      <thead class="sticky top-0 bg-white">
+       <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
+        <th class="py-3 font-semibold">Percobaan</th>
+        <th class="py-3 font-semibold text-center">Sudut</th>
+        <th class="py-3 font-semibold text-center">Kecep.</th>
+        <th class="py-3 font-semibold text-center">H-Max</th>
+        <th class="py-3 font-semibold text-center">Jarak</th>
+        <th class="py-3 font-semibold text-right"></th>
+       </tr>
+      </thead>
+      <tbody id="history-body" class="text-sm"><!-- Data rows injected here -->
+      </tbody>
+     </table>
+     <div id="empty-state" class="py-12 flex flex-col items-center justify-center text-slate-400"><i data-lucide="inbox" class="w-12 h-12 mb-2 opacity-20"></i>
+      <p>Belum ada data tersimpan.</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  <footer class="p-4 text-center border-t border-slate-100 text-xs text-slate-400 bg-white">
+   <p id="footer-text">Simulasi Fisika Interaktif - Materi Gerak Parabola</p>
+  </footer>
+  <script>
+        // Constants & Config
+        const PIXELS_PER_METER = 20;
+        let config = {
+            lab_title: "Lab Maya Lintasan Parabola",
+            lab_instructions: "Atur parameter dan amati pergerakan benda.",
+            footer_text: "Simulasi Fisika Interaktif - Materi Gerak Parabola",
+            background_color: "#f8fafc",
+            primary_color: "#4f46e5",
+            secondary_color: "#ffffff",
+            text_color: "#1e293b",
+            action_color: "#6366f1",
+            font_family: "Plus Jakarta Sans",
+            font_size: 16
+        };
+
+        const defaultConfig = { ...config };
+
+        // Data Storage
+        let trialsHistory = [];
+
+        // Simulation State
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        let isAnimating = false;
+        let animationFrame;
+        let startTime;
+        let trajectoryPoints = [];
+        let simData = {
+            angle: 45,
+            velocity: 20,
+            gravity: 9.8,
+            height: 0,
+            hMax: 0,
+            range: 0,
+            totalTime: 0
+        };
+
+        // UI Elements
+        const angleInp = document.getElementById('angle-input');
+        const velocityInp = document.getElementById('velocity-input');
+        const gravityInp = document.getElementById('gravity-input');
+        const heightInp = document.getElementById('height-input');
+        const fireBtn = document.getElementById('fire-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const saveBtn = document.getElementById('save-data-btn');
+
+        // SDK Initialization
+        async function initApp() {
+            if (window.elementSdk) {
+                window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange: async (newConfig) => {
+                        config = { ...config, ...newConfig };
+                        updateUIStyles();
+                    },
+                    mapToCapabilities: (cfg) => ({
+                        recolorables: [
+                            { get: () => cfg.background_color, set: (c) => window.elementSdk.setConfig({ background_color: c }) },
+                            { get: () => cfg.secondary_color, set: (c) => window.elementSdk.setConfig({ secondary_color: c }) },
+                            { get: () => cfg.text_color, set: (c) => window.elementSdk.setConfig({ text_color: c }) },
+                            { get: () => cfg.primary_color, set: (c) => window.elementSdk.setConfig({ primary_color: c }) },
+                            { get: () => cfg.action_color, set: (c) => window.elementSdk.setConfig({ action_color: c }) }
+                        ],
+                        fontEditable: { get: () => cfg.font_family, set: (f) => window.elementSdk.setConfig({ font_family: f }) },
+                        fontSizeable: { get: () => cfg.font_size, set: (s) => window.elementSdk.setConfig({ font_size: s }) }
+                    }),
+                    mapToEditPanelValues: (cfg) => new Map([
+                        ["lab_title", cfg.lab_title],
+                        ["lab_instructions", cfg.lab_instructions],
+                        ["footer_text", cfg.footer_text]
+                    ])
+                });
+            }
+
+            if (window.dataSdk) {
+                const dataResult = await window.dataSdk.init({
+                    onDataChanged: (data) => {
+                        trialsHistory = data;
+                        renderHistory();
+                    }
+                });
+            }
+
+            setupEventListeners();
+            resizeCanvas();
+            lucide.createIcons();
+            drawStaticScene();
+        }
+
+        function updateUIStyles() {
+            const body = document.getElementById('app-body');
+            const header = document.getElementById('main-header');
+            const title = document.getElementById('lab-title');
+            const instructions = document.getElementById('lab-instructions');
+            const footerText = document.getElementById('footer-text');
+            const fireBtn = document.getElementById('fire-btn');
+
+            body.style.backgroundColor = config.background_color;
+            body.style.color = config.text_color;
+            body.style.fontFamily = `'${config.font_family}', sans-serif`;
+            
+            const baseSize = config.font_size;
+            title.style.fontSize = `${baseSize * 1.5}px`;
+            instructions.style.fontSize = `${baseSize * 0.85}px`;
+            
+            header.style.backgroundColor = config.secondary_color;
+            title.textContent = config.lab_title;
+            instructions.textContent = config.lab_instructions;
+            footerText.textContent = config.footer_text;
+            
+            fireBtn.style.backgroundColor = config.primary_color;
+            
+            drawStaticScene();
+        }
+
+        function setupEventListeners() {
+            window.addEventListener('resize', resizeCanvas);
+
+            angleInp.addEventListener('input', (e) => {
+                simData.angle = parseFloat(e.target.value);
+                document.getElementById('angle-val').textContent = simData.angle;
+                drawStaticScene();
+            });
+
+            velocityInp.addEventListener('input', (e) => {
+                simData.velocity = parseFloat(e.target.value);
+                document.getElementById('velocity-val').textContent = simData.velocity;
+            });
+
+            gravityInp.addEventListener('input', (e) => {
+                simData.gravity = parseFloat(e.target.value);
+                document.getElementById('gravity-val').textContent = simData.gravity;
+            });
+
+            heightInp.addEventListener('input', (e) => {
+                simData.height = parseFloat(e.target.value);
+                document.getElementById('height-val').textContent = simData.height;
+                drawStaticScene();
+            });
+
+            fireBtn.addEventListener('click', startSimulation);
+            resetBtn.addEventListener('click', resetSimulation);
+            
+            saveBtn.addEventListener('click', async () => {
+                if (trialsHistory.length >= 999) {
+                    alert("Batas riwayat penuh (999). Silakan hapus beberapa data.");
+                    return;
+                }
+                
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> Menyimpan...`;
+                lucide.createIcons();
+
+                const result = await window.dataSdk.create({
+                    trial_name: `Percobaan #${trialsHistory.length + 1}`,
+                    angle: simData.angle,
+                    velocity: simData.velocity,
+                    max_height: parseFloat(simData.hMax),
+                    range: parseFloat(simData.range),
+                    timestamp: new Date().toISOString()
+                });
+
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Berhasil Disimpan!";
+                setTimeout(() => {
+                    saveBtn.textContent = "Simpan ke Riwayat";
+                    saveBtn.disabled = true;
+                }, 2000);
+            });
+
+            document.getElementById('view-data-btn').addEventListener('click', () => {
+                document.getElementById('data-modal').classList.remove('hidden');
+            });
+
+            document.getElementById('close-modal-btn').addEventListener('click', () => {
+                document.getElementById('data-modal').classList.add('hidden');
+            });
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            drawStaticScene();
+        }
+
+        function drawStaticScene() {
+            if (isAnimating) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawCannon(simData.angle, simData.height);
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 0.5;
+            
+            const step = PIXELS_PER_METER * 2;
+            for (let x = 0; x < canvas.width; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = canvas.height; y > 0; y -= step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawCannon(angle, height) {
+            const groundY = canvas.height - 40;
+            const cannonX = 60;
+            const cannonY = groundY - (height * PIXELS_PER_METER);
+
+            // Ground
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(0, groundY, canvas.width, 40);
+
+            // Base
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.roundRect(cannonX - 20, cannonY, 40, 10, 5);
+            ctx.fill();
+
+            // Barrel
+            ctx.save();
+            ctx.translate(cannonX, cannonY);
+            ctx.rotate(-angle * Math.PI / 180);
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, -8, 40, 16);
+            ctx.restore();
+
+            // Pivot
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.arc(cannonX, cannonY, 12, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function startSimulation() {
+            if (isAnimating) resetSimulation();
+            
+            isAnimating = true;
+            startTime = performance.now();
+            trajectoryPoints = [];
+            
+            // Initial calculations
+            const v0 = simData.velocity;
+            const theta = simData.angle * Math.PI / 180;
+            const g = simData.gravity;
+            const h0 = simData.height;
+
+            // t at max height: vy = 0 -> v0*sin(theta) - g*t = 0
+            const tMaxH = (v0 * Math.sin(theta)) / g;
+            simData.hMax = h0 + (v0 * Math.sin(theta) * tMaxH) - (0.5 * g * tMaxH * tMaxH);
+            
+            // Range: y = 0 -> h0 + v0*sin(theta)*t - 0.5*g*t^2 = 0 (Quadratic formula)
+            const a = -0.5 * g;
+            const b = v0 * Math.sin(theta);
+            const c = h0;
+            const tLanding = (-b - Math.sqrt(b*b - 4*a*c)) / (2*a);
+            simData.totalTime = tLanding;
+            simData.range = v0 * Math.cos(theta) * tLanding;
+
+            fireBtn.disabled = true;
+            fireBtn.classList.add('opacity-50');
+            document.getElementById('projectile-info').classList.remove('opacity-50');
+            
+            animate();
+        }
+
+        function animate(now = performance.now()) {
+            const elapsed = (now - startTime) / 1000; // seconds
+            const speedMultiplier = 1; 
+            const t = elapsed * speedMultiplier;
+
+            if (t > simData.totalTime) {
+                finishSimulation();
+                return;
+            }
+
+            const v0 = simData.velocity;
+            const theta = simData.angle * Math.PI / 180;
+            const g = simData.gravity;
+            const h0 = simData.height;
+
+            const x = v0 * Math.cos(theta) * t;
+            const y = h0 + (v0 * Math.sin(theta) * t) - (0.5 * g * t * t);
+
+            trajectoryPoints.push({ x, y });
+
+            // Update UI
+            document.getElementById('res-hmax').textContent = `${Math.max(0, y).toFixed(2)} m`;
+            document.getElementById('res-range').textContent = `${x.toFixed(2)} m`;
+            document.getElementById('res-time').textContent = `${t.toFixed(2)} s`;
+
+            renderSimulationFrame(x, y);
+            animationFrame = requestAnimationFrame(animate);
+        }
+
+        function renderSimulationFrame(currX, currY) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawCannon(simData.angle, simData.height);
+
+            const groundY = canvas.height - 40;
+            const startX = 60;
+            const startY = groundY - (simData.height * PIXELS_PER_METER);
+
+            // Draw Trajectory Line
+            if (trajectoryPoints.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = config.primary_color;
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(startX, startY);
+                trajectoryPoints.forEach(p => {
+                    ctx.lineTo(startX + (p.x * PIXELS_PER_METER), groundY - (p.y * PIXELS_PER_METER));
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw Proyectile
+            const px = startX + (currX * PIXELS_PER_METER);
+            const py = groundY - (currY * PIXELS_PER_METER);
+            
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(px, py, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function finishSimulation() {
+            isAnimating = false;
+            fireBtn.disabled = false;
+            fireBtn.classList.remove('opacity-50');
+            saveBtn.disabled = false;
+
+            document.getElementById('res-hmax').textContent = `${simData.hMax.toFixed(2)} m`;
+            document.getElementById('res-range').textContent = `${simData.range.toFixed(2)} m`;
+            document.getElementById('res-time').textContent = `${simData.totalTime.toFixed(2)} s`;
+        }
+
+        function resetSimulation() {
+            cancelAnimationFrame(animationFrame);
+            isAnimating = false;
+            trajectoryPoints = [];
+            fireBtn.disabled = false;
+            fireBtn.classList.remove('opacity-50');
+            saveBtn.disabled = true;
+            document.getElementById('projectile-info').classList.add('opacity-50');
+
+            document.getElementById('res-hmax').textContent = `0.00 m`;
+            document.getElementById('res-range').textContent = `0.00 m`;
+            document.getElementById('res-time').textContent = `0.00 s`;
+            
+            drawStaticScene();
+        }
+
+        function renderHistory() {
+            const body = document.getElementById('history-body');
+            const empty = document.getElementById('empty-state');
+            body.innerHTML = '';
+
+            if (trialsHistory.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            [...trialsHistory].reverse().forEach(trial => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-50 hover:bg-slate-50 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-4 font-medium">${trial.trial_name}</td>
+                    <td class="py-4 text-center">${trial.angle}°</td>
+                    <td class="py-4 text-center">${trial.velocity} m/s</td>
+                    <td class="py-4 text-center text-indigo-600 font-bold">${trial.max_height} m</td>
+                    <td class="py-4 text-center text-green-600 font-bold">${trial.range} m</td>
+                    <td class="py-4 text-right">
+                        <button onclick="deleteTrial('${trial.__backendId}')" class="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        async function deleteTrial(id) {
+            const trial = trialsHistory.find(t => t.__backendId === id);
+            if (!trial) return;
+
+            const confirmBtn = event.currentTarget;
+            confirmBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>`;
+            
+            const result = await window.dataSdk.delete(trial);
+            if (!result.isOk) {
+                renderHistory(); // revert UI
+            }
+        }
+
+        // Run
+        initApp();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dd18db0411bb5a6',t:'MTc3MzY0MDk5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
